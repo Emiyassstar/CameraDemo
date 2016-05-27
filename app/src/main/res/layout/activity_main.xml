@@ -9,8 +9,10 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.example.emiyasstar.camerademo.MainActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!" />
+    <SurfaceView
+        android:id="@+id/local_video_surfaceview"
+        android:layout_width="fill_parent"
+        android:layout_height="160sp"
+        android:keepScreenOn="true"
+        android:layout_centerInParent="true" />
 </RelativeLayout>
