@@ -3,12 +3,17 @@ package com.example.emiyasstar.camerademo;
 import android.annotation.SuppressLint;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
+import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 import java.lang.reflect.Method;
 
@@ -25,8 +30,9 @@ public class MainActivity extends AppCompatActivity {
 
     private Camera camera = null;
 
-    private int vwidth =640;
-    private int vheight = 480;
+    private int vwidth =320;
+    private int vheight = 320;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,9 +60,18 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+//        ViewGroup.LayoutParams params = cameraPreview.getLayoutParams();
+//        vheight = params.height;
+//        vwidth = params.width;
+
+        DisplayMetrics dm = new DisplayMetrics();
+        dm = this.getResources().getDisplayMetrics();
+        int screen_w = dm.widthPixels;
+        int screen_h = dm.heightPixels;
+        CustomLog.d(TAG,"screenPixels: "+screen_w+" "+screen_h);
         cameraPreview.getHolder().setType(
                 SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        cameraPreview.getHolder().setFixedSize(vwidth, vheight);
+        cameraPreview.getHolder().setFixedSize(vheight, vheight);
         cameraPreview.getHolder().addCallback(new CameraSurfaceCallback());
     }
 
@@ -64,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         CustomLog.d(TAG, "onResume: ");
+//        setCameraDisplayOrientation();
     }
 
     @Override
@@ -88,8 +104,10 @@ public class MainActivity extends AppCompatActivity {
             if (camera != null) {
                 try {
                     Camera.Parameters parameters = camera.getParameters();
+                    ViewGroup.LayoutParams params = cameraPreview.getLayoutParams();
+                    CustomLog.d(TAG,"cameraPreview params:"+params.width+";"+params.height);
                     parameters.setPreviewSize(vwidth,
-                            vheight);
+                           vheight);
                     CustomLog.d(TAG, "camera.surfaceChanged width[" + w
                             + "]height[" + h + "]");
                     camera.setParameters(parameters);
@@ -105,6 +123,7 @@ public class MainActivity extends AppCompatActivity {
             CustomLog.d(TAG, "camser surfaceCreated open camera.");
             int cameraFacing = Camera.CameraInfo.CAMERA_FACING_FRONT;
             startCamera_(cameraFacing, holder);
+            setCameraDisplayOrientation();
         }
 
         // @Override
@@ -155,9 +174,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * 鎽勫儚澶寸被鍨� 1: 鍓嶇疆鎽勫儚澶� 0锛� 鍚庣疆鎽勫儚澶� 鍏朵粬锛�浠呬竴涓憚鍍忓ご
-     */
+
     private int cameraType = 1; // 鎽勫儚澶寸被鍨�
 
     /**
@@ -249,6 +266,7 @@ public class MainActivity extends AppCompatActivity {
         // Set camera param
         try {
             Camera.Parameters parameters = camera.getParameters();
+          //  ViewGroup.LayoutParams params = cameraPreview.getLayoutParams();
             parameters.setPreviewFormat(PixelFormat.YCbCr_420_SP);
             parameters.setPreviewFrameRate(15);
             parameters.setPreviewSize(vwidth, vheight);
@@ -340,5 +358,55 @@ public class MainActivity extends AppCompatActivity {
         // restart current camera
         startCamera_(cameraType, null);
     }
+
+    /**
+     * 设置摄像头角度
+     */
+    @SuppressLint("NewApi")
+    public void setCameraDisplayOrientation() {
+        int cameraId = cameraType;
+       // Camera camera = camera;
+        if (camera == null) {
+            return;
+        }
+        android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
+        if (cameraId < 0 || cameraId >= Camera.getNumberOfCameras()) {
+            cameraId = 0;
+        }
+        android.hardware.Camera.getCameraInfo(cameraId, info);
+        int rotation = this.getWindowManager().getDefaultDisplay()
+                .getRotation();
+        int degrees = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0:
+                degrees = 0;
+                break;
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
+        }
+        CustomLog.d(TAG,"setCameraDisplayOrientation()degrees = " + degrees);
+        int result;
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (info.orientation + degrees) % 360;
+            result = (360 - result) % 360; // compensate the mirror
+        } else { // back-facing
+            result = (info.orientation - degrees + 360) % 360;
+        }
+        CustomLog.d(TAG,"setCameraDisplayOrientation()result = " + result);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+//            if(isBaiduTest&&isPortrait()){
+//                result=0;
+//            }
+            camera.setDisplayOrientation(result);
+        }
+    }
+
 
 }
